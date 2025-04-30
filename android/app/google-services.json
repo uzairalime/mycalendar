@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1067661817060",
+    "project_id": "my-calender-6597c",
+    "storage_bucket": "my-calender-6597c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1067661817060:android:8bb80f772d2abe909e68f1",
+        "android_client_info": {
+          "package_name": "com.example.mycalender"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1067661817060-msfqpeahgq0h9u0pfs7k2650a20418ua.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDX3NNzAk7BeA3U4doOmTvw1k7tc4sWFf0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1067661817060-msfqpeahgq0h9u0pfs7k2650a20418ua.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

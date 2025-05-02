@@ -40,7 +40,8 @@ class LoginScreen extends StatelessWidget {
               CustomIconBtn(
                 title: "Continue with Microsoft",
                 imagePath: Images.outlookCalenderLogo,
-                onTap: () =>log("Microsoft login pressed"),
+                onTap: () =>controller.signInWithMicrosoft(),
+                // onTap: ()=> log("Microsoft Sign In");
               ),
             ],
           ),

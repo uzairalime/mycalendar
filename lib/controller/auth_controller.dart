@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
@@ -10,51 +12,96 @@ import 'package:mycalender/utils/app_constant.dart';
 import '../helper/route_helper.dart';
 import '../service/google_auth_client.dart';
 
+enum LoginProvider { google, microsoft }
+
 class AuthController extends GetxController{
 
-  // final FlutterAppAuth _appAuth = const FlutterAppAuth();
-  //
-  // final isMicrosoftLoggedIn = false.obs;
-  // final microsoftAccessToken = ''.obs;
-  // final microsoftRefreshToken = ''.obs;
-
   // Initialize the plugin
-  final _appAuth = FlutterAppAuth();
-  final String _clientId     = AppConstant.clientIdMicrosoft;
-  final String _redirectUri  = AppConstant.redirectUrl;
-  final String _issuer       = 'https://login.microsoftonline.com/${AppConstant.tencentIdMicrosoft}';
-  final List<String> _scopes = [
-    'User.Read',
-    'offline_access',
-    'Calendars.ReadWrite'
-  ];
+  final loginProvider = Rxn<LoginProvider>();
+  String? accessTokenMicrosoft;
 
+  void setGoogleUser(calendar.CalendarApi api, String email) {
+    loginProvider.value = LoginProvider.google;
+    calendarApi = api;
+  }
+  void setMicrosoftUser(String accessToken, String email) {
+    loginProvider.value = LoginProvider.microsoft;
+    accessTokenMicrosoft = accessToken;
+
+  }
+
+  final FlutterAppAuth _appAuth = FlutterAppAuth();
+
+  // Future<String?> signInWithMicrosoft() async {
+  //   try {
+  //     // Configuration for Microsoft Identity Platform v2.0
+  //     final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
+  //       AuthorizationTokenRequest(
+  //         AppConstant.clientIdMicrosoft, // Your Azure AD client ID
+  //         AppConstant.redirectUrl, // Your registered redirect URI
+  //         discoveryUrl: 'https://login.microsoftonline.com/${AppConstant.tencentIdMicrosoft}/v2.0/.well-known/openid-configuration',
+  //         scopes: ['openid', 'profile', 'email', 'User.Read', 'Calendars.ReadWrite', 'offline_access'],
+  //         promptValues: ['login'],
+  //         serviceConfiguration: AuthorizationServiceConfiguration(
+  //           authorizationEndpoint: 'https://login.microsoftonline.com/${AppConstant.tencentIdMicrosoft}/oauth2/v2.0/authorize',
+  //           tokenEndpoint: 'https://login.microsoftonline.com/${AppConstant.tencentIdMicrosoft}/oauth2/v2.0/token',
+  //         ),
+  //       ),
+  //     );
+  //     accessTokenMicrosoft = result?.accessToken;
+  //     print('Microsoft Sign In Error: $result');
+  //     if (result != null) {
+  //       print("message${result.idToken}");
+  //       print("message${result.authorizationAdditionalParameters}");
+  //       print("message${result.scopes}");
+  //       print("message${result.accessToken}");
+  //       Get.toNamed(AppRoutes.home);
+  //
+  //
+  //     }
+  //   } catch (e) {
+  //     print('Microsoft Sign In Error: $e');
+  //     rethrow;
+  //   }
+  //   return null;
+  // }
+  ///----------------------------------------------------------
   Future<String?> signInWithMicrosoft() async {
-    log("-----------------Microsoft Sign In1");
-    try{
-      // Performs authorize + token exchange
+    try {
       final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
-          _clientId,
-          _redirectUri,
-          issuer: _issuer,
-          scopes: ['User.Read', 'offline_access', 'Calendars.Read'],
-          // No additionalParameters or promptValues here if not needed
+          AppConstant.clientIdMicrosoft,
+          AppConstant.redirectUrl,
+          // discoveryUrl: 'https://login.microsoftonline.com/${AppConstant.tencentIdMicrosoft}/v2.0/.well-known/openid-configuration',
+          discoveryUrl: 'https://login.microsoftonline.com/${AppConstant.tencentIdMicrosoft}/oauth2/v2.0/token',
+          scopes: ['User.Read', 'Calendars.ReadWrite', 'offline_access'],
         ),
       );
-      if (result != null) {
-        final accessToken = result.accessToken;
-        // TODO: Store token and proceed to fetch calendar events
-        print('Access token: $accessToken');
-      }
 
-    }catch(e){
-      log("-----------------Microsoft Sign In$e");
-      log("Microsoft Sign In Error: $e");
+      if (result != null && result.accessToken != null) {
+        accessTokenMicrosoft = result.accessToken!;
+        print(result.accessToken!.split('.').last.length);
+        loginProvider.value = LoginProvider.microsoft;
+        _isSignedIn = true;
+        Get.toNamed(AppRoutes.getHomeRoute());
+      }
+    } catch (e) {
+      print('Microsoft Sign-In Error: $e');
+      rethrow;
     }
+    return null;
   }
 
 
+  Future<void> signOutMicrosoft() async {
+    accessTokenMicrosoft = null;
+    _isSignedIn = false;
+    loginProvider.value = null;
+    Get.find<CalController>().appointments.clear();
+    Get.offAllNamed(AppRoutes.getLoginRoute());
+  }
+
+  ///----------------------------------------------------------
   late GoogleSignIn _googleSignIn;
   late GoogleSignInAccount? _currentUser;
   late calendar.CalendarApi calendarApi;
@@ -69,8 +116,11 @@ class AuthController extends GetxController{
 
   // var isSignedIn = false.obs;
 
+  @override
   void onInit() {
     super.onInit();
+
+    // Google Sign-in init
     _googleSignIn = GoogleSignIn(
       scopes: [
         calendar.CalendarApi.calendarScope,
@@ -82,21 +132,25 @@ class AuthController extends GetxController{
       if (_currentUser != null) {
         await _initializeCalendar();
         _isSignedIn = true;
+        loginProvider.value = LoginProvider.google;
         Get.toNamed(AppRoutes.getHomeRoute());
       }
     });
 
+    // Try Google silent login
     _googleSignIn.signInSilently().then((account) async {
       if (account != null) {
         _currentUser = account;
         await _initializeCalendar();
         _isSignedIn = true;
-        Get.toNamed(AppRoutes.getHomeRoute()); // Redirect to home if signed in
+        loginProvider.value = LoginProvider.google;
+        Get.toNamed(AppRoutes.getHomeRoute());
       }
     }).catchError((error) {
-      print('Silent Sign-In Error: $error');
+      print('Silent Google Sign-In Error: $error');
     });
   }
+
   /// Google SignIn
   Future<void> signInWithGoogle() async {
     try {
@@ -123,7 +177,7 @@ class AuthController extends GetxController{
     }
   }
   /// logout Dialog
-  void logoutDialog(BuildContext context,) {
+  void logoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -135,14 +189,22 @@ class AuthController extends GetxController{
             child: Text("Close"),
           ),
           TextButton(
-            onPressed: () => Get.find<AuthController>().signOutGoogle(),
+            onPressed: () {
+              final provider = loginProvider.value;
+              Navigator.pop(context);
+              if (provider == LoginProvider.google) {
+                signOutGoogle();
+              } else if (provider == LoginProvider.microsoft) {
+                signOutMicrosoft();
+              }
+            },
             child: Text("Logout"),
           ),
-
         ],
       ),
     );
   }
+
   ///
   Future<void> _initializeCalendar() async {
     final authHeaders = await _currentUser!.authHeaders;

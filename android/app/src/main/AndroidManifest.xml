@@ -38,32 +38,19 @@
             </intent-filter>
         </activity>
 
-        <!-- For AppAuth -->
-        <activity
-            android:name="net.openid.appauth.RedirectUriReceiverActivity"
-            android:exported="true"
-            tools:node="replace">  <!-- Now properly declared -->
+        <activity android:name="com.microsoft.identity.client.BrowserTabActivity">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="com.example.mycalender"/>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="com.example.mycalender"
+                    android:path="/qhs5ObYu+oUk+Yaa+MrF0WUplyQ="
+                    android:scheme="msauth" />
             </intent-filter>
         </activity>
 
-        <!-- Keep this for backward compatibility -->
-        <activity
-            android:name="com.linusu.flutter_appauth.CallbackActivity"
-            android:exported="true">
-            <intent-filter android:label="flutter_appauth">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data
-                    android:scheme="com.example.mycalender"
-                    android:host="oauthredirect"/>
-            </intent-filter>
-        </activity>
+
 
         <meta-data
             android:name="flutterEmbedding"

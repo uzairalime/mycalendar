@@ -480,6 +480,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.15.0"
+  msal_flutter:
+    dependency: "direct main"
+    description:
+      path: "packages/msal_flutter"
+      relative: true
+    source: path
+    version: "2.0.1"
   oauth2:
     dependency: transitive
     description:

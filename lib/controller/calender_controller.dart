@@ -63,12 +63,57 @@ class CalController extends GetxController {
       ),
     );
   }
+
+  /// fetch microsoft events
+  Future<void> fetchAllEventsMicrosoft() async {
+    try {
+      isFetchingEvents.value = true;
+      appointments.clear();
+      // Get.find<AuthController>().printTokenInParts("${Get.find<AuthController>().accessTokenMicrosoft?.split('.')[1]}");
+      // print("Fetching events...${Get.find<AuthController>().accessTokenMicrosoft?.split('.').first}");
+      print("Fetching events ");
+      final String decodedToken = "${Get.find<AuthController>().accessTokenMicrosoft}";
+      String token = Get.find<AuthController>().accessTokenMicrosoft!;
+      String first =token.split('.').first;
+      String last =token.split('.').last;
+      String middleToken =token.split('.')[1];
+      Get.find<AuthController>().printTokenInParts(middleToken);
+      print("------first${first}");
+      print("------last$last");
+      print(middleToken.length);
+      final authController = Get.find<AuthController>();
+      final now = DateTime.now();
+      final start = DateTime(now.year - 1, now.month, now.day).toUtc();
+      final end = DateTime(now.year + 1, now.month, now.day).toUtc();
+
+      final response = await fetchMicrosoftEventsaa(tokenType: authController.tokenTypeMicrosoft, accessToken: authController.accessTokenMicrosoft!, startDate: start,endDate: end);
+      appointments.addAll(response.map((event) {
+        return Appointment(
+          id: event['id'],
+          location: authController.getUserEmail,
+          startTime: DateTime.parse(event['start']['dateTime']).toLocal(),
+          endTime: DateTime.parse(event['end']['dateTime']).toLocal(),
+          subject: event['subject'] ?? 'No Title',
+          notes: event['bodyPreview'] ?? '',
+          color: getRandomColor(),
+        );
+      }).toList());
+      print('Total Events Loaded: ${appointments.length}');
+    } catch (e) {
+      isFetchingEvents.value = false;
+      print('Error fetching events: $e');
+    }
+  }
   /// Fetch all events from the calendar
   Future<void> fetchAllEvents() async {
     try {
       isFetchingEvents.value = true;
       appointments.clear();
-      print("Fetching events...${Get.find<AuthController>().accessTokenMicrosoft}");
+      // Get.find<AuthController>().printTokenInParts("${Get.find<AuthController>().accessTokenMicrosoft?.split('.')[1]}");
+      // print("Fetching events...${Get.find<AuthController>().accessTokenMicrosoft?.split('.').first}");
+      print("Fetching events ");
+      final String decodedToken = "${Get.find<AuthController>().accessTokenMicrosoft}";
+      print("------${decodedToken.length}");
       String token = Get.find<AuthController>().accessTokenMicrosoft!;
       String middleToken =token.split('.').last;
       print(middleToken.length);
@@ -77,36 +122,36 @@ class CalController extends GetxController {
       final start = DateTime(now.year - 1, now.month, now.day).toUtc();
       final end = DateTime(now.year + 1, now.month, now.day).toUtc();
 
-      if (authController.loginProvider.value == LoginProvider.google) {
-        final calendarList = await authController.calendarApi.calendarList.list();
-        for (var cal in calendarList.items!) {
-          final events = await authController.calendarApi.events.list(
-            cal.id!,
-            timeMin: start,
-            timeMax: end,
-            singleEvents: true,
-            orderBy: 'startTime',
-          );
-          if (events.items == null) continue;
-
-          appointments.addAll(events.items!.map((event) {
-            final startTime = event.start?.dateTime ?? DateTime.parse(event.start!.date.toString());
-            final endTime = event.end?.dateTime ?? DateTime.parse(event.end!.date.toString());
-
-            return Appointment(
-              id: event.id,
-              location: cal.id,
-              recurrenceId: event.creator?.email ?? '',
-              startTime: startTime,
-              endTime: endTime,
-              subject: event.summary ?? 'No Title',
-              notes: event.description ?? '',
-              color: getRandomColor(),
-            );
-          }).toList());
-        }
-      } else if (authController.loginProvider.value == LoginProvider.microsoft) {
-        final response = await fetchMicrosoftEventsaa( accessToken: authController.accessTokenMicrosoft!, startDate: start,endDate: end);
+      // if (authController.loginProvider.value == LoginProvider.google) {
+      //   final calendarList = await authController.calendarApi.calendarList.list();
+      //   for (var cal in calendarList.items!) {
+      //     final events = await authController.calendarApi.events.list(
+      //       cal.id!,
+      //       timeMin: start,
+      //       timeMax: end,
+      //       singleEvents: true,
+      //       orderBy: 'startTime',
+      //     );
+      //     if (events.items == null) continue;
+      //
+      //     appointments.addAll(events.items!.map((event) {
+      //       final startTime = event.start?.dateTime ?? DateTime.parse(event.start!.date.toString());
+      //       final endTime = event.end?.dateTime ?? DateTime.parse(event.end!.date.toString());
+      //
+      //       return Appointment(
+      //         id: event.id,
+      //         location: cal.id,
+      //         recurrenceId: event.creator?.email ?? '',
+      //         startTime: startTime,
+      //         endTime: endTime,
+      //         subject: event.summary ?? 'No Title',
+      //         notes: event.description ?? '',
+      //         color: getRandomColor(),
+      //       );
+      //     }).toList());
+      //   }
+      // } else if (authController.loginProvider.value == LoginProvider.microsoft) {
+        final response = await fetchMicrosoftEventsaa(tokenType: authController.tokenTypeMicrosoft, accessToken: authController.accessTokenMicrosoft!, startDate: start,endDate: end);
         appointments.addAll(response.map((event) {
           return Appointment(
             id: event['id'],
@@ -118,7 +163,7 @@ class CalController extends GetxController {
             color: getRandomColor(),
           );
         }).toList());
-      }
+      // }
 
       print('Total Events Loaded: ${appointments.length}');
     } catch (e) {
@@ -129,23 +174,24 @@ class CalController extends GetxController {
   /// Fetch Microsoft events
   Future<List<dynamic>> fetchMicrosoftEventsaa({
     required String accessToken,
+    String? tokenType,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     final start = startDate.toUtc().toIso8601String();
     final end = endDate.toUtc().toIso8601String();
 
-    final url = Uri.parse(
-      // 'https://graph.microsoft.com/v1.0/me/calendarview?startDateTime=$start&endDateTime=$end&\$orderby=start/dateTime',
-      'https://graph.microsoft.com/v1.0/me/calendar/events',
-    );
+    // final url = Uri.parse(
+    //   // 'https://graph.microsoft.com/v1.0/me/calendarview?startDateTime=$start&endDateTime=$end&\$orderby=start/dateTime',
+    //   'https://graph.microsoft.com/v1.0/me/calendar/events',
+    // );
+    print("url: $accessToken");
 
     try {
       final response = await http.get(
-        url,
+        Uri.parse('https://graph.microsoft.com/v1.0/me/calendar'),
         headers: {
           'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
         },
       );
 

@@ -32,7 +32,8 @@ class LoginScreen extends StatelessWidget {
                 title: "Continue with Google Calendar",
                 imagePath: Images.googleCalenderLogo,
                 onTap: () {
-                  controller.signInWithGoogle();
+                  // controller.signInWithGoogle();
+                  controller.init();
                 },
               ).paddingOnly(
                 bottom: Dimensions.paddingDefault,
@@ -40,7 +41,10 @@ class LoginScreen extends StatelessWidget {
               CustomIconBtn(
                 title: "Continue with Microsoft",
                 imagePath: Images.outlookCalenderLogo,
+                // onTap: () =>controller.signInWithMicrosoftFire(),
                 onTap: () =>controller.signInWithMicrosoft(),
+                // onTap: () =>controller.azureSignInApi(true),
+                // onTap: () =>controller.signInWithMicrosoftpca(),
                 // onTap: ()=> log("Microsoft Sign In");
               ),
             ],

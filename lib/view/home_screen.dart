@@ -32,7 +32,8 @@ class HomeScreen extends StatelessWidget {
         actions: [
           InkWell(
             // onTap: ()=>Get.toNamed(AppRoutes.getEventCreationRoute()),
-            onTap: ()=>controller.fetchAllEvents(),
+            // onTap: ()=>controller.fetchAllEvents(),
+            onTap: ()=>controller.fetchAllEventsMicrosoft(),
             child: SvgPicture.asset(
               Images.addIcon,
               width: 25,
